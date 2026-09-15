@@ -1,0 +1,42 @@
+# Which ammeter types are part of this test run, and which port each one
+# listens on. The exact protocol command is intentionally NOT duplicated here:
+# it stays owned by each ammeter class (Ammeters/*.py) to avoid having two
+# sources of truth for the same wire-protocol detail.
+ammeters:
+  greenlee:
+    port: 5000
+  entes:
+    port: 5001
+  circutor:
+    port: 5002
+
+testing:
+  sampling:
+    # Fixed number of measurements to take. If set (not null), this takes
+    # precedence over total_duration_seconds/sampling_frequency_hz.
+    # Default of 20: enough samples for meaningful statistics (mean/median/
+    # std dev) while still running near-instantly. Revisit before final
+    # submission (see my_help_files/work-documentation.he.html).
+    measurements_count: 20
+    # Alternative sampling mode: derive count from duration * frequency.
+    # Only used when measurements_count is null. Setting both this pair AND
+    # measurements_count at the same time is a configuration error.
+    total_duration_seconds: null
+    sampling_frequency_hz: null
+
+analysis:
+  statistical_metrics:
+    - mean
+    - median
+    - std_dev
+    - min
+    - max
+  visualization:
+    enabled: true
+    plot_types:
+      - line
+      - histogram
+
+result_management:
+  results_dir: results
+  format: json

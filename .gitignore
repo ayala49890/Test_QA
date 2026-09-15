@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+
+# Personal notes / help files (not part of the delivered project)
+my_help_files/
+
+# Test results / outputs
+results/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
