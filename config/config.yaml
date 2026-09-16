@@ -12,13 +12,14 @@ ammeters:
 
 testing:
   sampling:
-    # Any complete, consistent combination of the 3 fields below is accepted;
-    # fields that should not participate must be left null (see
-    # src/testing/sampler.py for the exact rules and all supported
-    # combinations). Currently configured: exactly 20 measurements, taken
-    # back-to-back as fast as possible (no duration/frequency pacing).
-    # Revisit before final submission (see my_help_files/work-documentation.he.html).
-    measurements_count: 20
+    # No default is set here on purpose - you must explicitly choose a
+    # sampling strategy before running a test. Any complete, consistent
+    # combination of the 3 fields below is accepted (see src/testing/sampler.py
+    # for the exact rules and all supported combinations). Examples:
+    #   measurements_count: 20                        (fixed count, no pacing)
+    #   total_duration_seconds: 10                     )
+    #   sampling_frequency_hz: 2                       ) together -> 20 measurements, 1 every 0.5s
+    measurements_count: null
     total_duration_seconds: null
     sampling_frequency_hz: null
     # Minimum fraction of measurements that must succeed for a sampling run to
