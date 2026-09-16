@@ -12,17 +12,19 @@ ammeters:
 
 testing:
   sampling:
-    # Fixed number of measurements to take. If set (not null), this takes
-    # precedence over total_duration_seconds/sampling_frequency_hz.
-    # Default of 20: enough samples for meaningful statistics (mean/median/
-    # std dev) while still running near-instantly. Revisit before final
-    # submission (see my_help_files/work-documentation.he.html).
+    # Any complete, consistent combination of the 3 fields below is accepted;
+    # fields that should not participate must be left null (see
+    # src/testing/sampler.py for the exact rules and all supported
+    # combinations). Currently configured: exactly 20 measurements, taken
+    # back-to-back as fast as possible (no duration/frequency pacing).
+    # Revisit before final submission (see my_help_files/work-documentation.he.html).
     measurements_count: 20
-    # Alternative sampling mode: derive count from duration * frequency.
-    # Only used when measurements_count is null. Setting both this pair AND
-    # measurements_count at the same time is a configuration error.
     total_duration_seconds: null
     sampling_frequency_hz: null
+    # Minimum fraction of measurements that must succeed for a sampling run to
+    # be considered valid (0.0-1.0). Below this, a clear error is raised
+    # instead of silently returning statistics computed on too few samples.
+    min_success_rate: 0.8
 
 analysis:
   statistical_metrics:
