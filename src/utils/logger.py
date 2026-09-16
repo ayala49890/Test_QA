@@ -21,7 +21,12 @@ class TestLogger:
 
         # הגדרת הלוגר
         logger = logging.getLogger(f"test_{self._test_name}")
+        logger.setLevel(logging.DEBUG)
 
+        # Connect log_file to the logger - without this, nothing is ever written to disk.
+        handler = logging.FileHandler(log_file, encoding="utf-8")
+        handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+        logger.addHandler(handler)
 
         return logger
 
