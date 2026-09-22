@@ -46,6 +46,11 @@ python main.py
 
 Starts the 3 emulator servers and requests one measurement from each - useful to confirm your Python environment and the client/server protocol both work.
 
+> **Troubleshooting:** if you rerun a script right after stopping a previous
+> one and it hangs or fails to connect, the OS may not have released the
+> ports yet - wait a few seconds and try again, or increase the `time.sleep(...)`
+> call before the measurement loop.
+
 ### 2. Full test run (sampling + statistics + saved result)
 
 The easiest way to try the full framework is the ready-to-run example:
@@ -97,6 +102,22 @@ under `results/`.
 > clear `SamplingConfigError` is raised. `examples/run_tests.py` handles this
 > for you interactively.
 
+### 3. Retrieving and comparing past results
+
+Every run is saved as its own JSON file under `results/`. Use
+`src/testing/results.py` to list and reload them, e.g. to compare two runs:
+
+```python
+from src.testing.results import list_results, load_result
+
+for filename in list_results("results"):  # most recent first
+    print(filename)
+
+run_a = load_result("results", "greenlee_20260922_172047_imcmjc")
+run_b = load_result("results", "circutor_20260922_172816_u3jt3f")
+print(run_a["stats"], run_b["stats"])
+```
+
 ## Configuration (`config/config.yaml`)
 
 - **`ammeters`** - port for each ammeter type. The exact wire-protocol command
@@ -132,11 +153,6 @@ under `results/`.
    wiring up a `FileHandler` + `Formatter` + log level.
 
 See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for the reasoning behind these and other choices.
-
-## Known Limitations / Not Implemented
-
-- Cross-ammeter accuracy comparison (bonus)
-- Error simulation (bonus)
 
 ## Ammeter Protocol Reference
 
