@@ -3,7 +3,7 @@ import random
 import string
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from src.testing.sampler import SamplingResult
 
@@ -20,7 +20,7 @@ def save_result(
     results_dir: str,
     ammeter_type: str,
     sampling_result: SamplingResult,
-    stats: Dict[str, float],
+    stats: Dict[str, Optional[float]],
     sampling_config: dict,
 ) -> str:
     """Persist a single test run (raw values + stats + metadata) as a JSON file.

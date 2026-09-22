@@ -40,4 +40,5 @@ class TestLogger:
         self.logger.debug(message)
 
     def warning(self, message: str):
-        self.logger.warning(message) 
+        self.logger.warning(message)
+ 
