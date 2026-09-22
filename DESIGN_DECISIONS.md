@@ -104,8 +104,10 @@ hardware.
 `analysis.py` uses Python's built-in `statistics` module for mean / median /
 std_dev, since it is fully sufficient for this data size and avoids an
 unnecessary dependency, per the "minimize external library dependencies"
-constraint. `matplotlib`/`seaborn` remain reserved for the visualization
-bonus feature, where there is no reasonable stdlib alternative.
+constraint. The only external library the framework actually uses for
+computation/output is `matplotlib`, for the visualization feature (section 10),
+where there is no reasonable stdlib alternative; `numpy`/`scipy`/`pandas`/
+`seaborn` remain unused.
 
 ## 7. Unified measurement API via a class, not per-type branching
 
@@ -141,3 +143,51 @@ never attached a `FileHandler`, so nothing was ever written to disk,
 regardless of timing or naming. This was fixed by adding the missing
 `FileHandler` + `Formatter` + log level, without changing the existing
 filename/timestamp logic.
+
+A later refinement also guards against `logging.getLogger` returning a cached
+logger: the logger name now includes the timestamp, and a `if not
+logger.handlers` check prevents attaching a duplicate `FileHandler` (which
+would double log lines and leak file handles) if the same test name is reused
+within one process.
+
+## 10. Visualization (bonus): config-gated, matplotlib only, best-effort
+
+The starter `config.yaml` already shipped with `analysis.visualization.enabled:
+true`, signalling that visualization was expected. `src/testing/visualization.py`
+implements it: `generate_plots(...)` renders a line plot (current over samples)
+and a histogram (value distribution) per run, saved under `results/plots/`.
+
+Three deliberate choices:
+
+- **`matplotlib` only, not `seaborn`.** `seaborn` produces prettier defaults but
+  pulls in `pandas` at runtime purely for styling. `matplotlib` alone renders
+  clear, professional line/histogram plots, so it is the minimal choice that
+  honours the "minimize external library dependencies" constraint.
+- **Config-gated, not a separate manual step.** Plotting runs inside
+  `run_test` only when `analysis.visualization.enabled` is true, so the
+  existing config flag actually drives behaviour - consistent with the
+  project's configuration-driven design.
+- **Best-effort, never fatal.** Plot generation is wrapped so that a failure
+  (e.g. `matplotlib` not installed, or a bad `plot_types` value) is logged as a
+  warning and the test run - whose measurements, statistics and JSON result
+  already succeeded - still returns normally. Visualization is an enhancement of
+  the reporting, not a prerequisite for it. The non-interactive `Agg` backend is
+  used so plots render to files without a display, safe under the threaded
+  emulator setup.
+
+## 11. Performance consistency evaluation (bonus): coefficient of variation
+
+`analysis.py` adds `consistency_cv`, the coefficient of variation
+(`std_dev / mean`) - a standard, unitless measure of how consistent a set of
+measurements is relative to their own size, which is exactly what the
+"Performance consistency evaluation" bonus challenge asks for. A lower value
+means the ammeter's readings are more consistent; it lets two ammeters (or
+two runs of the same one) be compared on consistency even if their absolute
+current levels differ.
+
+It is implemented as a metric alongside `mean`/`median`/`std_dev`/`min`/`max`,
+selectable the same way via `analysis.statistical_metrics` in `config.yaml`,
+rather than as a separate code path - keeping `analyze()` as the single place
+all statistics are computed. It returns `None` under the same n<2 condition
+as `std_dev` (which it depends on), and also when the mean is 0, to avoid a
+division-by-zero.

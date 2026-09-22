@@ -7,9 +7,10 @@ embedded-systems QA exercise.
 ## Requirements
 
 - Python 3.9+
-- `pip install -r requirements.txt` (only `pyyaml` is actually required by the
-  code today; the other listed packages - numpy/scipy/matplotlib/seaborn/pandas -
-  are not currently used. See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for why.)
+- `pip install -r requirements.txt`. The framework itself needs only `pyyaml`
+  (config) and `matplotlib` (the optional visualization feature - see below).
+  The other listed packages (numpy/scipy/seaborn/pandas) are not used by the
+  code. See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for why.
 
 No additional libraries were installed beyond what is already listed in
 `requirements.txt`.
@@ -26,13 +27,14 @@ No additional libraries were installed beyond what is already listed in
 - `src/testing/`
   - `ammeter_client.py` - `AmmeterClient`: a unified API (`measure(ammeter_type)`) that works the same way regardless of ammeter type.
   - `sampler.py` - `collect_samples(...)`: repeated, precisely-timed measurements per the sampling configuration, with per-measurement failure tolerance.
-  - `analysis.py` - `analyze(values, metrics)`: mean / median / std_dev / min / max.
+  - `analysis.py` - `analyze(values, metrics)`: mean / median / std_dev / min / max, plus `consistency_cv` (coefficient of variation - see below).
+  - `visualization.py` - `generate_plots(...)`: optional line + histogram plots of a run (matplotlib), saved under `results/plots/`.
   - `results.py` - `save_result` / `list_results` / `load_result`: JSON persistence with a unique result ID and metadata.
   - `test_framework.py` - `AmmeterTestFramework.run_test(ammeter_type)`: orchestrates all of the above into a single call.
 - `src/utils/` - `config.py` (YAML loading), `logger.py` (`TestLogger`), `Utils.py` (`generate_random_float`).
-- `examples/run_tests.py` - legacy example, kept for reference only (marked "don't use it" in the original template - superseded by `AmmeterTestFramework`).
-- `results/` - generated at runtime (git-ignored); JSON test results and logs.
-- `sample_results/` - a few committed example results, for reference (see Deliverables).
+- `examples/run_tests.py` - the recommended ready-to-run entry point: starts the emulators, runs `AmmeterTestFramework.run_test(...)` for all three ammeter types, and prints a summary (stats + plot paths). Rewritten from the original template stub, which was a non-working placeholder marked "don't use it".
+- `results/` - generated at runtime (git-ignored); JSON test results, logs, and plots (`results/plots/`).
+- `sample_results/` - a few committed example outputs (a result JSON plus example plots), for reference (see Deliverables).
 
 ## Quick Start
 
@@ -59,6 +61,13 @@ ask you in the terminal to choose one of the two sampling strategies (a fixed
 number of measurements, or a total duration + sampling frequency), instead of
 failing.
 
+When the run finishes, because `analysis.visualization.enabled` is `true` in
+`config.yaml`, a line plot and a histogram are generated per ammeter type and
+saved under `results/plots/` (their paths are printed in the summary). Open
+them with any image viewer - e.g. `Invoke-Item results/plots` on Windows. This
+requires `matplotlib` (installed via `requirements.txt`); if it is missing, the
+run still succeeds and simply skips the plots.
+
 To use `AmmeterTestFramework` directly in your own code:
 
 ```python
@@ -78,8 +87,9 @@ print(result)
 ```
 
 `run_test` returns a dict with `result_id`, `attempts`, `failures`,
-`success_rate`, the raw `values`, and the computed `stats`, and also persists
-the same data as a JSON file under `results/`.
+`success_rate`, the raw `values`, the computed `stats`, and `plots` (paths to
+any generated plot files), and also persists the same data as a JSON file
+under `results/`.
 
 > **Note:** `config/config.yaml` ships with `testing.sampling` fields set to
 > `null` on purpose (see below) - fill in a sampling strategy (e.g.
@@ -98,7 +108,16 @@ the same data as a JSON file under `results/`.
   (minimum fraction of successful measurements to accept a run, default 0.8).
   All three sampling fields ship as `null` - a sampling strategy must be
   chosen explicitly before running a test (a clear error is raised otherwise).
-- **`analysis.statistical_metrics`** - which metrics to compute.
+- **`analysis.statistical_metrics`** - which metrics to compute. Ships with
+  `mean`, `median`, `std_dev`, `min`, `max`, and `consistency_cv` (coefficient
+  of variation = `std_dev / mean`): a unitless "performance consistency"
+  score where lower means more consistent readings relative to their size.
+  Like `std_dev`, it is `null` when fewer than 2 measurements succeeded, and
+  also `null` if the mean is 0.
+- **`analysis.visualization`** - `enabled` (on/off) and `plot_types` (`line`,
+  `histogram`). When enabled, each `run_test` also saves plots under
+  `results/plots/`. Visualization is best-effort: if it fails (e.g. matplotlib
+  is missing) the test run still succeeds and the failure is logged.
 - **`result_management`** - output directory and format for saved results.
 
 ## Fixes to the provided starter code
@@ -117,33 +136,27 @@ See [DESIGN_DECISIONS.md](DESIGN_DECISIONS.md) for the reasoning behind these an
 ## Known Limitations / Not Implemented
 
 - Cross-ammeter accuracy comparison (bonus)
-- Visualization (bonus)
 - Error simulation (bonus)
 
 ## Ammeter Protocol Reference
 
-## Greenlee Ammeter
+### Greenlee Ammeter
 
 - **Port**: 5000
 - **Command**: `MEASURE_GREENLEE -get_measurement`
 - **Measurement Logic**: Calculates current using voltage (1V - 10V) and (0.1Ω - 100Ω).
 - **Measurement method** : Ohm's Law: I = V / R
 
-## ENTES Ammeter
+### ENTES Ammeter
 
 - **Port**: 5001
 - **Command**: `MEASURE_ENTES -get_data`
 - **Measurement Logic**: Calculates current using magnetic field strength (0.01T - 0.1T) and calibration factor (500 - 2000).
 - **Measurement method** : Hall Effect: I = B * K
 
-## CIRCUTOR Ammeter
+### CIRCUTOR Ammeter
 
 - **Port**: 5002
-- **Command**: `MEASURE_CIRCUTOR -get_measurement`
+- **Command**: `MEASURE_CIRCUTOR -get_measurement -current`
 - **Measurement Logic**: Calculates current using voltage values (0.1V - 1.0V) over a number of samples and a random time step (0.001s - 0.01s).
 - **Measurement method** : Rogowski Coil Integration: I = ∫V dt
-
-To start the ammeter emulators and request current measurements, run the `main.py` script:
-```sh
-python main.py
-```

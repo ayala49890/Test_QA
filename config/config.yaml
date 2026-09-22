@@ -34,6 +34,10 @@ analysis:
     - std_dev
     - min
     - max
+    # Coefficient of variation (std_dev / mean) - a unitless "performance
+    # consistency" score; lower means the ammeter's readings are more
+    # consistent relative to their size. null (None) for n<2 or mean==0.
+    - consistency_cv
   visualization:
     enabled: true
     plot_types:

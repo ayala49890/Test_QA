@@ -20,13 +20,16 @@ class TestLogger:
         log_file = f"{log_dir}/{timestamp}_{self._test_name}.log"
 
         # הגדרת הלוגר
-        logger = logging.getLogger(f"test_{self._test_name}")
+        logger = logging.getLogger(f"test_{self._test_name}_{timestamp}")
         logger.setLevel(logging.DEBUG)
 
-        # Connect log_file to the logger - without this, nothing is ever written to disk.
-        handler = logging.FileHandler(log_file, encoding="utf-8")
-        handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
-        logger.addHandler(handler)
+        # getLogger caches by name, so guard against attaching a duplicate
+        # FileHandler (and leaking file handles) if this name is reused.
+        if not logger.handlers:
+            # Connect log_file to the logger - without this, nothing is ever written to disk.
+            handler = logging.FileHandler(log_file, encoding="utf-8")
+            handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+            logger.addHandler(handler)
 
         return logger
 

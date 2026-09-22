@@ -63,6 +63,8 @@ def main():
         print(f"\nResults for {ammeter_type}:")
         print(f"  attempts={result['attempts']} failures={result['failures']} success_rate={result['success_rate']:.0%}")
         print(f"  stats={result['stats']}")
+        if result.get("plots"):
+            print(f"  plots={result['plots']}")
 
 if __name__ == "__main__":
     main()

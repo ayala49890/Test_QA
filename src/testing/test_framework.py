@@ -35,6 +35,8 @@ class AmmeterTestFramework:
         )
         logger.info(f"Test run complete, saved as {result_id}")
 
+        plot_paths = self._maybe_generate_plots(ammeter_type, result_id, sampling_result.values, logger)
+
         return {
             "result_id": result_id,
             "ammeter_type": ammeter_type,
@@ -43,4 +45,24 @@ class AmmeterTestFramework:
             "success_rate": sampling_result.success_rate,
             "values": sampling_result.values,
             "stats": stats,
+            "plots": plot_paths,
         }
+
+    def _maybe_generate_plots(self, ammeter_type, result_id, values, logger) -> list:
+        """Generate plots only if enabled in config. Visualization is a best-effort
+        add-on: a plotting failure (e.g. matplotlib not installed) is logged but
+        never fails a test run whose measurements already succeeded."""
+        visualization = self.config["analysis"].get("visualization") or {}
+        if not visualization.get("enabled"):
+            return []
+
+        try:
+            from src.testing.visualization import generate_plots
+
+            plots_dir = f"{self.config['result_management']['results_dir']}/plots"
+            paths = generate_plots(values, ammeter_type, result_id, plots_dir, visualization.get("plot_types", []))
+            logger.info(f"Saved {len(paths)} plot(s): {paths}")
+            return paths
+        except Exception as exc:
+            logger.warning(f"Visualization skipped ({type(exc).__name__}): {exc}")
+            return []
